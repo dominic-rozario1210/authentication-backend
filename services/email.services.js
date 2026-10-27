@@ -45,7 +45,7 @@ export const sendWelcomeMail = async (email, name) => {
 
 export const sendResetPasswordMail = async (email, resetToken) => {
     try {
-        const resetLink = `http://localhost:5173/reset-password/${resetToken}`;
+        const resetLink = `https://mernstack-authentication.vercel.app//${resetToken}`;
 
         const response = await brevo.transactionalEmails.sendTransacEmail({
             sender: {
