@@ -172,7 +172,7 @@ export const verifyToken = (req, res) => {
 export const changePassword = async (req, res) => {
     const { newPassword } = req.body;
     try {
-        const hansdedPassword = await bcrypt.hash(newPassword, 10)
+        const hashedPassword = await bcrypt.hash(newPassword, 10)
         req.user.password = hashedPassword
 
         await req.user.save();
