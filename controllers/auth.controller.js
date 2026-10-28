@@ -1,157 +1,201 @@
 import User from "../models/user.schema.js"
 import bcrypt from "bcrypt"
 import jwt from "jsonwebtoken"
-import {  sendResetPasswordMail, sendWelcomeMail } from "../services/email.services.js"
+import { sendResetPasswordMail, sendWelcomeMail } from "../services/email.services.js"
 
 export const register = async (req, res) => {
-    const { name,email,password } = req.body
+    const { name, email, password } = req.body
     try {
-        const user = await User.findOne({email})
+        const user = await User.findOne({ email })
 
-        if(user){
+        if (user) {
             return res.status(400).json({
-                message:"user already exist"
+                message: "user already exist"
             })
         }
 
-        const hashedPassword = await bcrypt.hash(password,10)
-    
+        const hashedPassword = await bcrypt.hash(password, 10)
+
 
         await User.create({
             name,
             email,
-            password:hashedPassword
+            password: hashedPassword
         })
 
-        await sendWelcomeMail(email,name)
+        await sendWelcomeMail(email, name)
 
         return res.status(201).json({
-            message:"user registred successfully "
+            message: "user registred successfully "
         })
     } catch (error) {
         res.status(500).json({
-            error:error.message
+            error: error.message
         })
     }
 }
 
-export const login = async(req,res) => {
-    const { email,password }= req.body
+export const login = async (req, res) => {
+    const { email, password } = req.body
     try {
-        const user = await User.findOne({email})
-        if(!user){
+        const user = await User.findOne({ email })
+        if (!user) {
             return res.status(404).json({
-                message:"user not found"
+                message: "user not found"
             })
         }
 
-        const isMatch = await bcrypt.compare(password,user.password)
-        if(!isMatch){
+        const isMatch = await bcrypt.compare(password, user.password)
+        if (!isMatch) {
             return res.status(400).json({
-                message:"Wrong password"
+                message: "Wrong password"
             })
         }
-
-        return res.status(200).json({
-            message:"Login successfull"
-        })
-    } catch (error) {
-        res.status(500).json({
-            error:error.message
-        })
-    }
-}
-
-export const forgotPassword = async (req,res) => {
-    const { email } = req.body;
-    try {
-        const user = await User.findOne({email})
-        if(!user){
-            return res.status(404).json({
-                message:"User not found"
-            })
-        }
-        const token=jwt.sign(
+        
+        const token = jwt.sign(
             {
-                _id:user.id
+                _id: user.id
             },
             process.env.JWT_KEY,
             {
-                expiresIn:"10m"
+                expiresIn: "1d"
             }
         )
-         await sendResetPasswordMail(email,token);
 
-        res.status(200).json({
-            message:"reset password mail send successfully"
+        return res.status(200).json({
+            message: "Login successfull",token
         })
-
     } catch (error) {
         res.status(500).json({
-            error:error.message
+            error: error.message
         })
     }
 }
 
-export const verifyToken = async (req,res) => {
-    const token = req.headers.authorization.split(" ")[1];
-    console.log(token);
-    
+export const forgotPassword = async (req, res) => {
+    const { email } = req.body;
     try {
-        if(!token){
-            return res.status(401).json({
-                message:"token missing"
+        const user = await User.findOne({ email })
+        if (!user) {
+            return res.status(404).json({
+                message: "User not found"
             })
         }
-        const decoded = jwt.verify(token,process.env.JWT_KEY)
+        const token = jwt.sign(
+            {
+                _id: user.id
+            },
+            process.env.JWT_KEY,
+            {
+                expiresIn: "10m"
+            }
+        )
+        await sendResetPasswordMail(email, token);
 
-        const user = await User.findById(decoded._id)
-
-        if(!user){
-            return res.status(400).json({
-                mesage:"user not found"
-            })
-        }
         res.status(200).json({
-            message:"Token verified successfully"
+            message: "reset password mail send successfully"
         })
+
     } catch (error) {
         res.status(500).json({
-            error:error.message
+            error: error.message
         })
     }
 }
 
-export const changePassword = async (req,res) => {
+// export const verifyToken = async (req,res) => {
+// const token = req.headers.authorization.split(" ")[1];
+// console.log(token);
+
+// try {
+//     if(!token){
+//         return res.status(401).json({
+//             message:"token missing"
+//         })
+//     }
+//     const decoded = jwt.verify(token,process.env.JWT_KEY)
+
+//     const user = await User.findById(decoded._id)
+
+//     if(!user){
+//         return res.status(400).json({
+//             mesage:"user not found"
+//         })
+//     }
+
+// } catch (error) {
+//     res.status(500).json({
+//         error:error.message
+//     })
+// }
+//}
+
+export const verifyToken = (req, res) => {
+    res.status(200).json({
+        message: "Token verified successfully"
+    })
+}
+
+// export const changePassword = async (req,res) => {
+//     const { newPassword } = req.body;
+//     const token = req.headers.authorization.split(" ")[1];
+//     try {
+//         if(!token){
+//             return res.status(401).json({
+//                 message:"token missing"
+//             })
+//         }
+//         const decoded = jwt.verify(token,process.env.JWT_KEY)
+
+//         const user = await User.findById(decoded._id)
+
+//         if(!user){
+//             return res.status(400).json({
+//                 mesage:"user not found"
+//             })
+//         }
+
+//         const hashedPassword = await bcrypt.hash(newPassword,10);
+
+//         user.password=hashedPassword
+//         await user.save();
+
+//         res.status(200).json({
+//             message:"password changed successfully"
+//         })
+//     } catch (error) {
+//         res.status(500).json({
+//             error:error.message
+//         })
+//     }
+// }
+export const changePassword = async (req, res) => {
     const { newPassword } = req.body;
-    const token = req.headers.authorization.split(" ")[1];
     try {
-        if(!token){
-            return res.status(401).json({
-                message:"token missing"
-            })
-        }
-        const decoded = jwt.verify(token,process.env.JWT_KEY)
+        const hansdedPassword = await bcrypt.hash(newPassword, 10)
+        req.user.password = hashedPassword
 
-        const user = await User.findById(decoded._id)
+        await req.user.save();
 
-        if(!user){
-            return res.status(400).json({
-                mesage:"user not found"
-            })
-        }
-
-        const hashedPassword = await bcrypt.hash(newPassword,10);
-
-        user.password=hashedPassword
-        await user.save();
-
-        res.status(200).json({
-            message:"password changed successfully"
+        return res.status(200).json({
+            message: "password changed successfully"
         })
     } catch (error) {
         res.status(500).json({
-            error:error.message
+            error: error.message
         })
     }
+}
+
+export const getProfile = async (req,res) =>{
+    const { name,email,role } = req.user;
+
+    return res.status(200).json({
+        message:"profile fetched successfully",
+        user:{
+            name,
+            email,
+            role
+        }
+    })
 }
