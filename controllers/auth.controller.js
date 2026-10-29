@@ -199,3 +199,9 @@ export const getProfile = async (req,res) =>{
         }
     })
 }
+
+export const verifyAdmin = async (req,res) => {
+    return res.status(200).json({
+        message:"Admin verified successfully"
+    })
+}
